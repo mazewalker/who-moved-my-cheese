@@ -11,20 +11,233 @@ const C64 = {
     grey: '#7B7B7B', lightGreen: '#A9FF9F', lightBlue: '#706DEB', lightGrey: '#B2B2B2'
 };
 
-// --- Achievements ---
+// Player identity colors, mirrored in CSS (--p1-color / --p2-color)
+const PLAYER_COLORS = { 1: C64.cyan, 2: C64.lightRed };
+
+// ===================================
+// PIXEL SPRITES (C64-style bitmaps)
+// Each map is 16 rows x 16 cols; letters index into a palette.
+// ===================================
+const SPRITE_DEFS = {
+    mouse: [
+        "................",
+        "..OO........OO..",
+        ".OEEO......OEEO.",
+        ".OEEO......OEEO.",
+        ".OBBOOOOOOOBBO..",
+        ".OBBBBBBBBBBBBO.",
+        "OBBBBBBBBBBBBBBO",
+        "OBBYBBBBBBBBYBBO",
+        "OBBBBBBBBBBBBBBO",
+        "OBBBBBNNNNBBBBBO",
+        ".OBBBBBNNBBBBBO.",
+        ".OBBBBBBBBBBBBO.",
+        "..OBBBBOOBBBBO..",
+        "...OOOOOOOOOO...",
+        "................",
+        "................"
+    ],
+    owl: [
+        "................",
+        "..OO........OO..",
+        "..OBO......OBO..",
+        "..OBBOOOOOOBBO..",
+        ".OBBBBBBBBBBBBO.",
+        ".OBBWWBBBBWWBBO.",
+        ".OBBWYBBBBWYBBO.",
+        ".OBBBBBNNBBBBBO.",
+        ".OBBBBBNNBBBBBO.",
+        ".OBBBBBBBBBBBBO.",
+        ".OBBOBBBBBBOBBO.",
+        ".OBBOBBBBBBOBBO.",
+        ".OBOOBBBBBBOOBO.",
+        "..OOOOOOOOOOOO..",
+        "................",
+        "................"
+    ],
+    cheese: [
+        "................",
+        "................",
+        ".......OO.......",
+        "......OYYO......",
+        ".....OYYYYO.....",
+        "....OYYOYYO.....",
+        "...OYYYYYYYO....",
+        "..OYYOYYYYYYO...",
+        ".OYYYYYYYOYYYO..",
+        "OYYYYOYYYYYYYYO.",
+        "OOOOOOOOOOOOOOOO",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................"
+    ],
+    bat: [
+        "................",
+        ".OO..........OO.",
+        ".OBO........OBO.",
+        ".OBBO..OO..OBBO.",
+        ".OBBBOOBBOOBBBO.",
+        ".OBBBBBBBBBBBBO.",
+        "..OBBYBBBBYBBO..",
+        "..OBBBBBBBBBBO..",
+        "...OBOOBOOBO....",
+        "....O..OO..O....",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................"
+    ],
+    raccoon: [
+        "................",
+        "..OO........OO..",
+        ".OEEO......OEEO.",
+        ".OBOOOOOOOOOOBO.",
+        ".OBBBBBBBBBBBBO.",
+        "OBBMMMMMMMMMMBBO",
+        "OBMWMMMMMMMWMBBO",
+        "OBBMMMMMMMMMMBBO",
+        "OBBBBBBBBBBBBBBO",
+        ".OBBBNNNNNBBBO..",
+        "..OBBBBBBBBBBBO.",
+        "...OOOOOOOOOO...",
+        "................",
+        "................",
+        "................",
+        "................"
+    ],
+    wolf: [
+        "................",
+        "..OO........OO..",
+        "..OBO......OBO..",
+        "..OBBO....OBBO..",
+        "...OBBOOOOBBO...",
+        "...OBBBBBBBBO...",
+        "..OBBYBBBBYBBO..",
+        "..OBBBBBBBBBBO..",
+        "..OBBBNNNNBBBO..",
+        "...OBBNNNNBBO...",
+        "....OBBBBBBO....",
+        ".....OOOOOO.....",
+        "................",
+        "................",
+        "................",
+        "................"
+    ],
+    shield: [
+        "................",
+        ".OOOOOOOOOOOOOO.",
+        ".OCCCCCCCCCCCCO.",
+        ".OCCWWWCCCCCCCO.",
+        ".OCWWWWCCCCCCCO.",
+        ".OCCCCCCCCCCCCO.",
+        ".OCCCCCCCCCCCCO.",
+        "..OCCCCCCCCCCO..",
+        "..OCCCCCCCCCCO..",
+        "...OCCCCCCCCO...",
+        "....OCCCCCCO....",
+        ".....OCCCCO.....",
+        "......OCCO......",
+        ".......OO.......",
+        "................",
+        "................"
+    ],
+    apple: [
+        "................",
+        "........O.......",
+        ".....OOOOO......",
+        "...OOOOOOOOO....",
+        "..OGGGGGGGGGO...",
+        ".OGWGGGGGGGGGO..",
+        ".OGGGGGGGGGGGO..",
+        ".OGGGGGGGGGGGO..",
+        ".OGGGGGGGGGGGO..",
+        "..OGGGGGGGGGO...",
+        "...OGGGGGGGO....",
+        "....OOO.OOO.....",
+        "................",
+        "................",
+        "................",
+        "................"
+    ]
+};
+
+// Palette letters used in the maps: O=outline, B=body, E=ear, Y=eye/detail,
+// N=nose/beak, W=white, M=mask, C=shield fill, G=apple fill.
+const SPRITE_PALETTES = {
+    sniff:           { O: C64.black, B: C64.lightGrey, E: C64.lightRed, Y: C64.black, N: C64.lightRed },
+    scurry:          { O: C64.black, B: C64.orange,    E: C64.lightRed, Y: C64.black, N: C64.lightRed },
+    hem:             { O: C64.black, B: C64.grey,      E: C64.lightRed, Y: C64.black, N: C64.lightRed },
+    haw:             { O: C64.black, B: C64.orange,    E: C64.brown,    Y: C64.black, N: C64.yellow, W: C64.white },
+    wanderer:        { O: C64.black, B: C64.grey,      Y: C64.lightRed },
+    thief:           { O: C64.black, B: C64.red,       E: C64.lightRed, M: C64.darkGrey, W: C64.white, N: C64.black },
+    guardian:        { O: C64.black, B: C64.purple,    Y: C64.yellow,   N: C64.black },
+    cheese:          { O: C64.orange, Y: C64.yellow },
+    'cheese-golden': { O: '#C9CB5E', Y: '#F5F79B' },
+    shield:          { O: C64.black, C: C64.cyan,   W: C64.white },
+    apple:           { O: C64.black, G: C64.green,  W: C64.white },
+    'mouse-green':   { O: C64.black, B: C64.green,  E: C64.lightRed, Y: C64.black, N: C64.lightRed },
+    'mouse-yellow':  { O: C64.black, B: C64.yellow, E: C64.lightRed, Y: C64.black, N: C64.lightRed },
+    'mouse-red':     { O: C64.black, B: C64.red,    E: C64.lightRed, Y: C64.black, N: C64.lightRed }
+};
+
+// Which sprite def + palette each playable character uses
+const CHARACTER_SPRITES = {
+    sniff: { def: 'mouse', palette: 'sniff' },
+    scurry: { def: 'mouse', palette: 'scurry' },
+    hem: { def: 'mouse', palette: 'hem' },
+    haw: { def: 'owl', palette: 'haw' }
+};
+const ENEMY_SPRITES = { wanderer: { def: 'bat', palette: 'wanderer' }, thief: { def: 'raccoon', palette: 'thief' }, guardian: { def: 'wolf', palette: 'guardian' } };
+const POWERUP_SPRITES = { shield: { def: 'shield', palette: 'shield' }, apple: { def: 'apple', palette: 'apple' } };
+
+const spriteCache = new Map();
+
+// Renders a sprite def with a palette onto an offscreen canvas (cached).
+// scale is the size of one source pixel in the output canvas.
+function getSprite(defName, paletteName, scale = 8) {
+    const key = `${defName}:${paletteName}:${scale}`;
+    if (spriteCache.has(key)) return spriteCache.get(key);
+
+    const map = SPRITE_DEFS[defName];
+    const palette = SPRITE_PALETTES[paletteName];
+    const c = document.createElement('canvas');
+    c.width = 16 * scale;
+    c.height = 16 * scale;
+    const cctx = c.getContext('2d');
+    for (let y = 0; y < 16; y++) {
+        const row = map[y];
+        for (let x = 0; x < 16; x++) {
+            const color = palette[row[x]];
+            if (!color) continue;
+            cctx.fillStyle = color;
+            cctx.fillRect(x * scale, y * scale, scale, scale);
+        }
+    }
+    spriteCache.set(key, c);
+    return c;
+}
+
+// Data-URL version for <img> tags in the DOM (menus, HUD, cards)
+function spriteDataURL(defName, paletteName, scale = 8) {
+    return getSprite(defName, paletteName, scale).toDataURL();
+}
+
+// --- Achievements (icons are glyphs from the C64 charset) ---
 const ACHIEVEMENTS = [
-    { id: 'first-cheese', name: 'First Bite', icon: '🧀', description: 'Collect your first cheese.' },
-    { id: 'century-score', name: 'Century Club', icon: '💯', description: 'Reach 100 points in a single game.' },
-    { id: 'golden-goal', name: 'Golden Goal', icon: '✨', description: 'Collect a golden cheese.' },
-    { id: 'combo-master', name: 'Combo Master', icon: '🔥', description: 'Reach a 5x combo streak.' },
-    { id: 'level-5-survivor', name: 'Deep Maze Explorer', icon: '🗺️', description: 'Reach level 5.' },
-    { id: 'no-hit-clear', name: 'Untouchable', icon: '🛡️', description: 'Finish a game with 5+ cheese and no life lost.' },
-    { id: 'roster-complete', name: 'Met the Whole Crew', icon: '👥', description: 'Play a game as all 4 characters.' }
+    { id: 'first-cheese', name: 'First Bite', icon: '●', description: 'Collect your first cheese.' },
+    { id: 'century-score', name: 'Century Club', icon: '█', description: 'Reach 100 points in a single game.' },
+    { id: 'golden-goal', name: 'Golden Goal', icon: '♦', description: 'Collect a golden cheese.' },
+    { id: 'combo-master', name: 'Combo Master', icon: '♥', description: 'Reach a 5x combo streak.' },
+    { id: 'level-5-survivor', name: 'Deep Maze Explorer', icon: '♣', description: 'Reach level 5.' },
+    { id: 'no-hit-clear', name: 'Untouchable', icon: '▓', description: 'Finish a game with 5+ cheese and no life lost.' },
+    { id: 'roster-complete', name: 'Met the Whole Crew', icon: '♠', description: 'Play a game as all 4 characters.' }
 ];
 
-const ENEMY_ICONS = { thief: '🦝', wanderer: '🦇', guardian: '🐺' };
 const ENEMY_TINTS = { thief: C64.red, wanderer: C64.grey, guardian: C64.purple };
-const POWERUP_ICONS = { shield: '🛡️', apple: '🍎' };
 const DIR_VECTORS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
 // --- Game State ---
@@ -48,8 +261,12 @@ const GameState = {
     selectedCharacter2: null,
     player2: { x: 0, y: 0, spawnX: 0, spawnY: 0, invulnerableUntil: 0, lastMoveTs: 0 },
     score2: 0,
-    cheese: { x: 0, y: 0, type: 'regular', moving: false, warningTimer: 0 },
+    cheese: { x: 0, y: 0, type: 'regular', moving: false },
     cheeseMoveInterval: null,
+    cheeseMoveAt: 0,     // timestamp of the next relocation
+    cheeseWarnAt: 0,     // timestamp when the "moving soon" warning starts
+    cheeseWarned: false,
+    pausedAt: 0,         // when the current pause began (to shift scheduled events on resume)
     gameTimer: null,
     enemyMoveInterval: null,
     lastKeyTime: 0,
@@ -86,7 +303,6 @@ const GameState = {
     characters: {
         sniff: {
             name: 'Sniff',
-            icon: '🐭',
             description: 'Smells out change early',
             ability: 'Cheese warning appears 2 seconds earlier',
             abilityClass: 'sniff',
@@ -94,7 +310,6 @@ const GameState = {
         },
         scurry: {
             name: 'Scurry',
-            icon: '🐹',
             description: 'Runs fast through the maze',
             ability: 'Moves at double speed (half the usual delay between steps)',
             abilityClass: 'scurry',
@@ -102,7 +317,6 @@ const GameState = {
         },
         hem: {
             name: 'Hem',
-            icon: '🐀',
             description: 'Resists change but learns',
             ability: '+1 extra life at start',
             abilityClass: 'hem',
@@ -110,7 +324,6 @@ const GameState = {
         },
         haw: {
             name: 'Haw',
-            icon: '🦉',
             description: 'Sees the big picture',
             ability: 'Can see cheese location on minimap',
             abilityClass: 'haw',
@@ -162,12 +375,16 @@ function startMultiplayerSelect() {
 function updateCharSelectSubtitle() {
     const subtitle = document.getElementById('select-subtitle');
     if (!subtitle) return;
+    subtitle.classList.remove('pick-p1', 'pick-p2');
+    const cursor = '<span class="blink">█</span>';
     if (!GameState.multiplayer) {
-        subtitle.textContent = 'Each cheese eater has unique abilities!';
+        subtitle.innerHTML = 'Each cheese eater has unique abilities! ' + cursor;
     } else if (!GameState.selectedCharacter) {
-        subtitle.textContent = 'Player 1: choose your character (Arrow Keys)';
+        subtitle.innerHTML = 'Player 1: Choose your character! (Arrow Keys / Joystick 1) ' + cursor;
+        subtitle.classList.add('pick-p1');
     } else {
-        subtitle.textContent = 'Player 2: choose your character (WASD)';
+        subtitle.innerHTML = 'Player 2: Choose your character! (WASD / Joystick 2) ' + cursor;
+        subtitle.classList.add('pick-p2');
     }
 }
 
@@ -190,6 +407,11 @@ function closeModal(modalId) {
 }
 
 // --- Character Selection ---
+function characterSpriteImg(key, scale = 6) {
+    const sprite = CHARACTER_SPRITES[key];
+    return `<img src="${spriteDataURL(sprite.def, sprite.palette, scale)}" alt="${GameState.characters[key].name}">`;
+}
+
 function populateMenuCharacters() {
     const grid = document.getElementById('menu-char-grid');
     if (grid.children.length > 0) return; // Already populated
@@ -198,7 +420,7 @@ function populateMenuCharacters() {
         const card = document.createElement('div');
         card.className = 'char-card';
         card.innerHTML = `
-            <div class="char-icon">${char.icon}</div>
+            <span class="char-icon">${characterSpriteImg(key)}</span>
             <div class="char-name">${char.name}</div>
         `;
         card.onclick = () => {
@@ -217,13 +439,25 @@ function populateCharacterGrid() {
 
     Object.entries(GameState.characters).forEach(([key, char]) => {
         const card = document.createElement('div');
-        card.className = 'char-card' + (key === GameState.selectedCharacter ? ' selected' : '');
-        card.style.cursor = 'pointer';
+        card.className = 'char-card';
+        if (GameState.multiplayer) {
+            if (key === GameState.selectedCharacter) card.classList.add('selected-p1');
+            if (key === GameState.selectedCharacter2) card.classList.add('selected-p2');
+        } else if (key === GameState.selectedCharacter) {
+            card.classList.add('selected-p1');
+        }
+
+        // "P1"/"P2" ribbon so it is always obvious who picked which character
+        let badges = '';
+        if (key === GameState.selectedCharacter) badges += '<span class="pick-badge">P1</span>';
+        if (GameState.multiplayer && key === GameState.selectedCharacter2) badges += '<span class="pick-badge p2">P2</span>';
+
         card.innerHTML = `
-            <div class="char-icon">${char.icon}</div>
+            ${badges}
+            <span class="char-icon">${characterSpriteImg(key)}</span>
             <div class="char-name">${char.name}</div>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">${char.description}</p>
-            <p style="font-size: 0.75rem; color: var(--primary); margin-top: 0.5rem;">${char.ability}</p>
+            <p class="char-desc">${char.description}</p>
+            <p class="char-ability">${char.ability}</p>
         `;
         card.onclick = () => selectCharacter(key);
         grid.appendChild(card);
@@ -245,6 +479,7 @@ function selectCharacter(key) {
     }
 
     GameState.selectedCharacter2 = key;
+    populateCharacterGrid();
     showScreen('difficulty-select');
 }
 
@@ -433,6 +668,9 @@ function startGame(difficulty) {
     updateUI();
     updateQuote();
 
+    // Reset the timer's low-time styling from any previous game
+    document.getElementById('timer').classList.remove('time-low');
+
     // Start timers
     startGameTimer();
     startCheeseMovement();
@@ -448,18 +686,38 @@ function startGame(difficulty) {
         if (GameState.touch.enabled) {
             hint.style.display = 'none';
         } else {
-            hint.textContent = GameState.multiplayer ? 'P1: Arrow Keys · P2: WASD' : 'Use Arrow Keys or WASD to move';
+            hint.textContent = GameState.multiplayer ? 'P1 (cyan): Arrow Keys / Joy 1  --  P2 (red): WASD / Joy 2' : 'Use Arrow Keys or WASD to move';
             hint.style.display = '';
-            setTimeout(() => { hint.style.display = 'none'; }, 3000);
+            setTimeout(() => { hint.style.display = 'none'; }, 4000);
         }
     }
 }
 
+// Shows/hides the P2 HUD panel and fills both player panels with the chosen
+// characters' names + sprites so it is always visible who is P1 and who is P2.
 function toggleMultiplayerUI() {
-    const p2Stats = document.getElementById('p2-stats');
-    if (p2Stats) p2Stats.style.display = GameState.multiplayer ? 'flex' : 'none';
-    const scoreLabel = document.getElementById('score-label');
-    if (scoreLabel) scoreLabel.textContent = GameState.multiplayer ? 'P1 Score' : 'Score';
+    const p2Panel = document.getElementById('p2-panel');
+    if (p2Panel) p2Panel.style.display = GameState.multiplayer ? 'flex' : 'none';
+
+    const p1Sprite = document.getElementById('p1-hud-sprite');
+    const p2Sprite = document.getElementById('p2-hud-sprite');
+    const p1Name = document.getElementById('p1-hud-name');
+    const p2Name = document.getElementById('p2-hud-name');
+
+    if (p1Sprite && GameState.selectedCharacter) {
+        const s = CHARACTER_SPRITES[GameState.selectedCharacter];
+        p1Sprite.src = spriteDataURL(s.def, s.palette);
+    }
+    if (p1Name && GameState.selectedCharacter) {
+        p1Name.textContent = GameState.characters[GameState.selectedCharacter].name;
+    }
+    if (GameState.multiplayer && p2Sprite && GameState.selectedCharacter2) {
+        const s = CHARACTER_SPRITES[GameState.selectedCharacter2];
+        p2Sprite.src = spriteDataURL(s.def, s.palette);
+    }
+    if (GameState.multiplayer && p2Name && GameState.selectedCharacter2) {
+        p2Name.textContent = GameState.characters[GameState.selectedCharacter2].name;
+    }
 }
 
 function updateMazeSize() {
@@ -516,8 +774,7 @@ function placeCheese() {
         x: cheeseX,
         y: cheeseY,
         type: cheeseType,
-        moving: false,
-        warningTimer: 0
+        moving: false
     };
 
     updateCheeseStatus();
@@ -539,8 +796,10 @@ function setupCanvas() {
     const marginX = 16;
     const topReserve = GameState.touch.enabled ? 230 : 110;
     const bottomReserve = GameState.touch.enabled ? 180 : 110;
-    const maxWidth = window.innerWidth - marginX * 2;
-    const maxHeight = window.innerHeight - topReserve - bottomReserve;
+    // The page padding around the playfield acts as the C64 "border" area
+    const bezel = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bezel'), 10) || 14) * 2;
+    const maxWidth = window.innerWidth - marginX * 2 - bezel;
+    const maxHeight = window.innerHeight - topReserve - bottomReserve - bezel;
 
     const cellWidth = Math.floor(maxWidth / GameState.mazeWidth);
     const cellHeight = Math.floor(maxHeight / GameState.mazeHeight);
@@ -565,87 +824,105 @@ function startGameTimer() {
 
             // Warning at 10 seconds
             if (GameState.timeLeft === 10) {
-                document.getElementById('timer').style.color = 'var(--danger)';
+                document.getElementById('timer').classList.add('time-low');
             }
         }
     }, 1000);
 }
 
 // --- Cheese Movement ---
-function startCheeseMovement() {
-    clearInterval(GameState.cheeseMoveInterval);
-
+// The cheese relocates on a schedule (cheeseMoveAt), with an on-screen warning
+// that appears slightly before (cheeseWarnAt). Both timestamps are shifted when
+// the game resumes from pause, so pausing never lets the cheese move "for free".
+function getCheeseMoveDelay() {
     let moveInterval;
     switch (GameState.difficulty) {
         case 'easy': moveInterval = 8000 - (GameState.level * 500); break;
         case 'medium': moveInterval = 5000 - (GameState.level * 300); break;
         case 'hard': moveInterval = 3000 - (GameState.level * 200); break;
     }
+    return Math.max(moveInterval, 1500); // Minimum 1.5 seconds
+}
 
-    moveInterval = Math.max(moveInterval, 1500); // Minimum 1.5 seconds
+// Sniff smells change early: his warning shows 2 seconds before everyone else's.
+function getCheeseWarningLead() {
+    const sniffActive = GameState.selectedCharacter === 'sniff' ||
+        (GameState.multiplayer && GameState.selectedCharacter2 === 'sniff');
+    return sniffActive ? 3500 : 1500;
+}
 
-    GameState.cheeseMoveInterval = setInterval(() => {
-        if (!GameState.isPaused && GameState.isPlaying) {
-            moveCheese();
-        }
-    }, moveInterval);
+function scheduleCheeseMove() {
+    const now = performance.now();
+    GameState.cheeseMoveAt = now + getCheeseMoveDelay();
+    GameState.cheeseWarnAt = GameState.cheeseMoveAt - getCheeseWarningLead();
+    GameState.cheeseWarned = false;
+    GameState.cheese.moving = false;
+}
+
+function startCheeseMovement() {
+    clearInterval(GameState.cheeseMoveInterval);
+    scheduleCheeseMove();
+    GameState.cheeseMoveInterval = setInterval(tickCheeseMovement, 200);
+}
+
+function tickCheeseMovement() {
+    if (!GameState.isPlaying || GameState.isPaused) return;
+    const now = performance.now();
+
+    if (!GameState.cheeseWarned && now >= GameState.cheeseWarnAt) {
+        GameState.cheeseWarned = true;
+        GameState.cheese.moving = true;
+        SoundEngine.play('warning');
+        updateCheeseStatus();
+    }
+
+    if (now >= GameState.cheeseMoveAt) {
+        moveCheese();
+    }
 }
 
 function moveCheese() {
-    if (GameState.cheese.moving) return;
+    const possibleMoves = getOpenNeighbors(GameState.cheese.x, GameState.cheese.y);
+    let newX = GameState.cheese.x;
+    let newY = GameState.cheese.y;
 
-    // Show warning first
-    GameState.cheese.moving = true;
-    GameState.cheese.warningTimer = 1500; // 1.5 second warning
-    SoundEngine.play('warning');
+    if (possibleMoves.length > 0) {
+        const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        newX = move.x;
+        newY = move.y;
+    }
 
-    updateCheeseStatus();
+    // Don't place cheese on a player
+    const onPlayer = (x, y) =>
+        (x === GameState.player.x && y === GameState.player.y) ||
+        (GameState.multiplayer && x === GameState.player2.x && y === GameState.player2.y);
 
-    setTimeout(() => {
-        if (!GameState.isPlaying) return;
-
-        const possibleMoves = getOpenNeighbors(GameState.cheese.x, GameState.cheese.y);
-        let newX = GameState.cheese.x;
-        let newY = GameState.cheese.y;
-
-        if (possibleMoves.length > 0) {
-            const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-            newX = move.x;
-            newY = move.y;
-        }
-
-        // Don't place cheese on a player
-        const onPlayer = (x, y) =>
-            (x === GameState.player.x && y === GameState.player.y) ||
-            (GameState.multiplayer && x === GameState.player2.x && y === GameState.player2.y);
-
-        if (onPlayer(newX, newY)) {
-            // Try to find another spot
-            for (const move of possibleMoves) {
-                if (!onPlayer(move.x, move.y)) {
-                    newX = move.x;
-                    newY = move.y;
-                    break;
-                }
+    if (onPlayer(newX, newY)) {
+        // Try to find another spot
+        for (const move of possibleMoves) {
+            if (!onPlayer(move.x, move.y)) {
+                newX = move.x;
+                newY = move.y;
+                break;
             }
         }
+    }
 
-        GameState.cheese.x = newX;
-        GameState.cheese.y = newY;
-        GameState.cheese.moving = false;
+    GameState.cheese.x = newX;
+    GameState.cheese.y = newY;
 
-        updateCheeseStatus();
-    }, 1500);
+    scheduleCheeseMove();
+    updateCheeseStatus();
 }
 
 function updateCheeseStatus() {
     const statusEl = document.getElementById('cheese-status');
     if (GameState.cheese.moving) {
-        statusEl.textContent = '🟡 Moving Soon!';
-        statusEl.style.color = 'var(--warning)';
+        statusEl.textContent = 'Moving Soon!';
+        statusEl.style.color = 'var(--primary)';
     } else {
-        statusEl.textContent = '🟢 Stable';
-        statusEl.style.color = 'var(--secondary)';
+        statusEl.textContent = 'Stable';
+        statusEl.style.color = 'var(--c64-light-green)';
     }
 }
 
@@ -894,17 +1171,15 @@ function drawEnemy(enemy, ts) {
     const pos = getEnemyRenderPos(enemy, ts);
     const px = pos.x * cs + cs / 2;
     const py = pos.y * cs + cs / 2;
-    const size = cs * 0.35;
+    const size = cs * 0.42;
 
     ctx.fillStyle = ENEMY_TINTS[enemy.type];
-    ctx.globalAlpha = 0.35;
+    ctx.globalAlpha = 0.3;
     ctx.fillRect(px - size, py - size, size * 2, size * 2);
     ctx.globalAlpha = 1;
 
-    ctx.font = `${size * 1.6}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(ENEMY_ICONS[enemy.type], px, py);
+    const sprite = ENEMY_SPRITES[enemy.type];
+    ctx.drawImage(getSprite(sprite.def, sprite.palette), px - size, py - size, size * 2, size * 2);
 }
 
 // --- Power-ups ---
@@ -960,7 +1235,7 @@ function drawPowerup(ts) {
 
     const cs = GameState.cellSize;
     const pulse = 1 + 0.1 * Math.sin(ts / 300);
-    const size = cs * 0.3 * pulse;
+    const size = cs * 0.38 * pulse;
     const px = pu.x * cs + cs / 2;
     const py = pu.y * cs + cs / 2;
 
@@ -969,10 +1244,8 @@ function drawPowerup(ts) {
     ctx.fillRect(px - size, py - size, size * 2, size * 2);
     ctx.globalAlpha = 1;
 
-    ctx.font = `${size * 1.8}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(POWERUP_ICONS[pu.type], px, py);
+    const sprite = POWERUP_SPRITES[pu.type];
+    ctx.drawImage(getSprite(sprite.def, sprite.palette), px - size, py - size, size * 2, size * 2);
 }
 
 // --- Particles & Screen Shake ---
@@ -1037,22 +1310,41 @@ function updateShake(dt) {
 
 // --- Game Loop (rendering + particle/shake physics only; setInterval timers own game-logic ticks) ---
 // --- Gamepad / Joystick Support ---
-// Generic enough to cover both "standard"-mapped gamepads (D-pad on buttons 12-15)
-// and simple digital USB joysticks (e.g. Speedlink Competition Pro) that report
-// direction via axes instead. Gamepad index 0 -> Player 1, index 1 -> Player 2
-// (multiplayer only).
+// Works for both "standard"-mapped gamepads (D-pad on buttons 12-15) and simple
+// digital USB joysticks (e.g. Speedlink Competition Pro, THEC64 Joystick) that
+// report direction via axes or low-index buttons instead.
+//
+// Pads are assigned dynamically: the FIRST connected pad found anywhere in
+// navigator.getGamepads() drives Player 1, the second drives Player 2. Earlier
+// versions only looked at slots 0 and 1, so a joystick that enumerated at a
+// higher index (very common when other devices/stale entries occupy the low
+// slots) silently never worked.
 const GAMEPAD_DEADZONE = 0.5;
 const gamepadPrevStart = {};
 const gamepadLastDiagLog = {};
+let gamepadAssignmentMsg = '';
 
-// Simple/older USB joysticks (Speedlink Competition Pro and similar) often
-// don't get recognized by the browser's "standard" gamepad database, so their
-// buttons/axes can land at different indices than a modern controller. Rather
-// than assume one fixed layout, scan every axis pair for deflection (not just
-// axes[0]/[1]) and check both the standard D-pad button range (12-15) and the
-// low button range (0-3) some simple pads use instead.
+// All currently connected pads, in slot order.
+function getConnectedGamepads() {
+    if (!navigator.getGamepads) return [];
+    const out = [];
+    const pads = navigator.getGamepads();
+    for (let i = 0; i < pads.length; i++) {
+        if (pads[i] && pads[i].connected) out.push(pads[i]);
+    }
+    return out;
+}
+
+// Simple/older USB joysticks often don't get recognized by the browser's
+// "standard" gamepad database, so their buttons/axes can land at different
+// indices than a modern controller. Rather than assume one fixed layout, scan
+// every axis pair for deflection (not just axes[0]/[1]) and check both the
+// standard D-pad button range (12-15) and the low button range (0-3) some
+// simple pads use instead.
 function getGamepadDirection(pad) {
-    const btn = (n) => !!(pad.buttons[n] && pad.buttons[n].pressed);
+    const buttons = pad.buttons || [];
+    const axes = pad.axes || [];
+    const btn = (n) => !!(buttons[n] && buttons[n].pressed);
 
     if (btn(12)) return [0, -1];
     if (btn(13)) return [0, 1];
@@ -1065,9 +1357,9 @@ function getGamepadDirection(pad) {
     if (btn(2) && !btn(0) && !btn(1) && !btn(3)) return [-1, 0];
     if (btn(3) && !btn(0) && !btn(1) && !btn(2)) return [1, 0];
 
-    for (let a = 0; a + 1 < pad.axes.length; a += 2) {
-        const axX = pad.axes[a] || 0;
-        const axY = pad.axes[a + 1] || 0;
+    for (let a = 0; a + 1 < axes.length; a += 2) {
+        const axX = axes[a] || 0;
+        const axY = axes[a + 1] || 0;
         if (axY < -GAMEPAD_DEADZONE) return [0, -1];
         if (axY > GAMEPAD_DEADZONE) return [0, 1];
         if (axX < -GAMEPAD_DEADZONE) return [-1, 0];
@@ -1075,6 +1367,13 @@ function getGamepadDirection(pad) {
     }
 
     return null;
+}
+
+// Start toggles pause/resume. Standard mapping puts Start at index 9; cheap
+// joysticks without a "standard" mapping may place it at 8 or 10 instead.
+function isStartPressed(pad) {
+    const buttons = pad.buttons || [];
+    return [9, 8, 10].some(n => !!(buttons[n] && buttons[n].pressed));
 }
 
 function logGamepadDiagnostics(pad, index) {
@@ -1088,39 +1387,46 @@ function logGamepadDiagnostics(pad, index) {
 }
 
 function pollGamepads() {
-    if (!navigator.getGamepads) return;
+    const assigned = getConnectedGamepads().slice(0, 2);
 
-    const pads = navigator.getGamepads();
-    for (let i = 0; i < 2; i++) {
-        const pad = pads[i];
-        if (!pad) continue;
-
-        logGamepadDiagnostics(pad, i);
-
-        if (!GameState.isPlaying) continue;
-
-        const playerNum = i === 0 ? 1 : 2;
-        if (playerNum === 2 && !GameState.multiplayer) continue;
-
-        if (!GameState.isPaused) {
-            const dir = getGamepadDirection(pad);
-            if (dir) handleDirectionInput(dir[0], dir[1], playerNum);
+    // Announce (once per assignment change) which physical pad drives which
+    // player -- also logged so users can verify their joystick was detected.
+    const signature = assigned.map(p => `${p.index}:${p.id}`).join('|');
+    if (signature !== gamepadAssignmentMsg) {
+        gamepadAssignmentMsg = signature;
+        assigned.forEach((pad, slot) => {
+            console.log(`Joystick ${slot + 1} assigned to Player ${slot + 1}: "${pad.id}" (browser index ${pad.index})`);
+        });
+        if (assigned.length > 0 && GameState.isPlaying) {
+            showToast('♥', 'Joystick Assigned',
+                assigned.map((p, i) => `P${i + 1}: ${p.id}`).join('  ·  '));
         }
+    }
 
-        // Start button (standard mapping index 9) toggles pause/resume
-        const startPressed = !!(pad.buttons[9] && pad.buttons[9].pressed);
-        if (startPressed && !gamepadPrevStart[i]) {
+    assigned.forEach((pad, slot) => {
+        logGamepadDiagnostics(pad, slot);
+
+        const startPressed = isStartPressed(pad);
+        const prevKey = `pad${pad.index}`;
+        if (startPressed && !gamepadPrevStart[prevKey]) {
             if (GameState.isPlaying && !GameState.isPaused) pauseGame();
             else if (GameState.isPaused) resumeGame();
         }
-        gamepadPrevStart[i] = startPressed;
-    }
+        gamepadPrevStart[prevKey] = startPressed;
+
+        if (!GameState.isPlaying || GameState.isPaused) return;
+        const playerNum = slot + 1;
+        if (playerNum === 2 && !GameState.multiplayer) return;
+
+        const dir = getGamepadDirection(pad);
+        if (dir) handleDirectionInput(dir[0], dir[1], playerNum);
+    });
 }
 
 window.addEventListener('gamepadconnected', (e) => {
     const g = e.gamepad;
     console.log(`Gamepad connected at index ${g.index}: "${g.id}" — mapping: "${g.mapping}", ${g.axes.length} axes, ${g.buttons.length} buttons.`);
-    showToast('🎮', 'Controller Connected', g.id);
+    showToast('●', 'Controller Connected', g.id);
 });
 
 window.addEventListener('gamepaddisconnected', (e) => {
@@ -1133,11 +1439,8 @@ window.addEventListener('gamepaddisconnected', (e) => {
 // before ever starting a game. Skips work while a game is active since
 // pollGamepads() already covers diagnostics there.
 function diagnosticGamepadLoop() {
-    if (!GameState.isPlaying && navigator.getGamepads) {
-        const pads = navigator.getGamepads();
-        for (let i = 0; i < 2; i++) {
-            if (pads[i]) logGamepadDiagnostics(pads[i], i);
-        }
+    if (!GameState.isPlaying) {
+        getConnectedGamepads().forEach((pad, slot) => logGamepadDiagnostics(pad, slot));
     }
     requestAnimationFrame(diagnosticGamepadLoop);
 }
@@ -1165,6 +1468,8 @@ function drawGame(ts = performance.now()) {
     const cs = GameState.cellSize;
     const maze = GameState.maze;
 
+    ctx.imageSmoothingEnabled = false; // crisp pixels, always
+
     // Clear at full extent first so screen shake never reveals gaps at the edges
     ctx.fillStyle = C64.black;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1172,50 +1477,31 @@ function drawGame(ts = performance.now()) {
     ctx.save();
     ctx.translate(GameState.shake.x, GameState.shake.y);
 
-    // Draw maze walls
-    ctx.strokeStyle = C64.lightGrey;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-
+    // Maze walls as chunky solid blocks straddling the cell edges, PETSCII-maze
+    // style. Each wall rect overshoots its ends by half a thickness so adjoining
+    // walls always join into solid corners.
+    const t = Math.max(3, Math.round(cs * 0.22));
+    const half = t / 2;
+    ctx.fillStyle = C64.lightBlue;
     for (let y = 0; y < GameState.mazeHeight; y++) {
         for (let x = 0; x < GameState.mazeWidth; x++) {
             const cell = maze[y][x];
             const px = x * cs;
             const py = y * cs;
 
-            if (cell.top) {
-                ctx.beginPath();
-                ctx.moveTo(px, py);
-                ctx.lineTo(px + cs, py);
-                ctx.stroke();
-            }
-            if (cell.right) {
-                ctx.beginPath();
-                ctx.moveTo(px + cs, py);
-                ctx.lineTo(px + cs, py + cs);
-                ctx.stroke();
-            }
-            if (cell.bottom) {
-                ctx.beginPath();
-                ctx.moveTo(px, py + cs);
-                ctx.lineTo(px + cs, py + cs);
-                ctx.stroke();
-            }
-            if (cell.left) {
-                ctx.beginPath();
-                ctx.moveTo(px, py);
-                ctx.lineTo(px, py + cs);
-                ctx.stroke();
-            }
+            if (cell.top)    ctx.fillRect(px - half, py - half, cs + t, t);
+            if (cell.bottom) ctx.fillRect(px - half, py + cs - half, cs + t, t);
+            if (cell.left)   ctx.fillRect(px - half, py - half, t, cs + t);
+            if (cell.right)  ctx.fillRect(px + cs - half, py - half, t, cs + t);
         }
     }
 
     // Draw cheese path hint for Haw
     if (GameState.selectedCharacter === 'haw') {
-        drawCheesePath(GameState.player);
+        drawCheesePath(GameState.player, 1);
     }
     if (GameState.multiplayer && GameState.selectedCharacter2 === 'haw') {
-        drawCheesePath(GameState.player2);
+        drawCheesePath(GameState.player2, 2);
     }
 
     drawPowerup(ts);
@@ -1224,9 +1510,9 @@ function drawGame(ts = performance.now()) {
     GameState.enemies.forEach(enemy => drawEnemy(enemy, ts));
 
     // Draw players
-    drawPlayer(GameState.player, GameState.selectedCharacter);
+    drawPlayer(GameState.player, GameState.selectedCharacter, 1);
     if (GameState.multiplayer) {
-        drawPlayer(GameState.player2, GameState.selectedCharacter2);
+        drawPlayer(GameState.player2, GameState.selectedCharacter2, 2);
     }
 
     drawParticles();
@@ -1238,62 +1524,80 @@ function drawCheese() {
     const cs = GameState.cellSize;
     const cx = GameState.cheese.x * cs + cs / 2;
     const cy = GameState.cheese.y * cs + cs / 2;
-    const size = cs * 0.35;
+    const size = cs * 0.42;
 
-    const highlight = GameState.cheese.type === 'double' ? C64.orange : C64.yellow;
-    ctx.fillStyle = highlight;
+    const golden = GameState.cheese.type === 'golden';
+    ctx.fillStyle = golden ? C64.white : C64.yellow;
     ctx.globalAlpha = 0.25;
     ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
     ctx.globalAlpha = 1;
 
-    // Cheese emoji
-    let cheeseEmoji;
-    switch (GameState.cheese.type) {
-        case 'golden': cheeseEmoji = '✨🧀'; break;
-        case 'double': cheeseEmoji = '🧀🧀'; break;
-        default: cheeseEmoji = '🧀';
+    const sprite = getSprite('cheese', golden ? 'cheese-golden' : 'cheese');
+    if (GameState.cheese.type === 'double') {
+        // Double cheese: two overlapping wedges
+        const s = size * 1.4;
+        ctx.drawImage(sprite, cx - s, cy - s * 0.55, s * 1.6, s * 1.6);
+        ctx.drawImage(sprite, cx - s * 0.35, cy - s * 0.55, s * 1.6, s * 1.6);
+    } else {
+        ctx.drawImage(sprite, cx - size, cy - size, size * 2, size * 2);
     }
 
-    ctx.font = `${size * 1.5}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(cheeseEmoji, cx, cy);
+    // Golden cheese sparkles
+    if (golden && Math.floor(performance.now() / 200) % 2 === 0) {
+        ctx.fillStyle = C64.white;
+        ctx.fillRect(cx - size - 3, cy - size - 3, 4, 4);
+        ctx.fillRect(cx + size - 1, cy + size - 1, 4, 4);
+    }
 }
 
-function drawPlayer(player, characterKey) {
+function drawPlayer(player, characterKey, playerNum) {
     const cs = GameState.cellSize;
-    const char = GameState.characters[characterKey];
     const px = player.x * cs + cs / 2;
     const py = player.y * cs + cs / 2;
-    const size = cs * 0.4;
+    const size = cs * 0.42;
+    const playerColor = PLAYER_COLORS[playerNum];
 
     // Dim (never fully hide) while briefly invulnerable after a hit, so a single
     // frame/screenshot never reads as "the player vanished".
     const invulnerable = Date.now() < player.invulnerableUntil;
     const flickerAlpha = invulnerable && Math.floor(Date.now() / 100) % 2 === 0 ? 0.35 : 1;
 
-    ctx.globalAlpha = flickerAlpha * 0.3;
-    ctx.fillStyle = C64.lightBlue;
+    // Backing plate in the player's identity color (cyan P1 / red P2)
+    ctx.globalAlpha = flickerAlpha * 0.35;
+    ctx.fillStyle = playerColor;
     ctx.fillRect(px - size, py - size, size * 2, size * 2);
-    ctx.globalAlpha = flickerAlpha;
 
-    // Player emoji
-    ctx.font = `${size * 1.5}px serif`;
+    ctx.globalAlpha = flickerAlpha;
+    const sprite = CHARACTER_SPRITES[characterKey];
+    if (sprite) {
+        ctx.drawImage(getSprite(sprite.def, sprite.palette), px - size, py - size, size * 2, size * 2);
+    }
+
+    // "P1"/"P2" label above the sprite so both players are identifiable at a glance
+    const label = `P${playerNum}`;
+    const fontSize = Math.max(10, Math.round(cs * 0.32));
+    ctx.font = `${fontSize}px C64, monospace`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(char.icon, px, py);
+    ctx.textBaseline = 'bottom';
+    const labelY = py - size - 2;
+    ctx.fillStyle = C64.black;
+    ctx.fillText(label, px + 2, labelY + 2);
+    ctx.fillStyle = playerColor;
+    ctx.fillText(label, px, labelY);
+
     ctx.globalAlpha = 1;
 }
 
-function drawCheesePath(player) {
-    // Simple path visualization for Haw's ability
+function drawCheesePath(player, playerNum = 1) {
+    // Simple path visualization for Haw's ability, tinted in the player's color
     const cs = GameState.cellSize;
     const startX = player.x * cs + cs / 2;
     const startY = player.y * cs + cs / 2;
     const endX = GameState.cheese.x * cs + cs / 2;
     const endY = GameState.cheese.y * cs + cs / 2;
 
-    ctx.strokeStyle = 'rgba(112, 109, 235, 0.35)';
+    ctx.strokeStyle = PLAYER_COLORS[playerNum];
+    ctx.globalAlpha = 0.4;
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
@@ -1301,6 +1605,7 @@ function drawCheesePath(player) {
     ctx.lineTo(endX, endY);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
 }
 
 // --- Player Movement ---
@@ -1351,13 +1656,18 @@ function handleDirectionInput(dx, dy, playerNum = 1) {
 }
 
 document.addEventListener('keydown', (e) => {
-    if (!GameState.isPlaying || GameState.isPaused) return;
+    if (!GameState.isPlaying) return;
 
     if (e.key === ' ') {
         e.preventDefault();
-        pauseGame();
+        if (GameState.isPaused) resumeGame();
+        else pauseGame();
         return;
     }
+
+    // Keep arrow keys from scrolling the page/modals during play
+    if (e.key.startsWith('Arrow')) e.preventDefault();
+    if (GameState.isPaused) return;
 
     if (GameState.multiplayer) {
         switch (e.key) {
@@ -1503,36 +1813,24 @@ function addTime() {
 
 function showFloatingText(text, x, y) {
     const cs = GameState.cellSize;
-    const px = x * cs + cs / 2;
-    const py = y * cs + cs / 2;
+    // Position relative to the canvas (which is centered in the wrapper), not
+    // the wrapper itself -- cell coordinates are canvas-relative.
+    const wrapper = document.querySelector('.maze-wrapper');
+    if (!wrapper) return;
+    const canvasRect = canvas.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const px = canvasRect.left - wrapperRect.left + x * cs + cs / 2;
+    const py = canvasRect.top - wrapperRect.top + y * cs + cs / 2;
 
     const el = document.createElement('div');
     el.textContent = text;
-    el.style.cssText = `
-        position: absolute;
-        left: ${px}px;
-        top: ${py}px;
-        color: var(--primary);
-        font-size: 1.5rem;
-        font-weight: bold;
-        pointer-events: none;
-        animation: floatUp 1s ease-out forwards;
-        z-index: 100;
-    `;
+    el.className = 'float-text';
+    el.style.left = `${px}px`;
+    el.style.top = `${py}px`;
 
-    document.querySelector('.maze-wrapper').appendChild(el);
+    wrapper.appendChild(el);
     setTimeout(() => el.remove(), 1000);
 }
-
-// Add floating text animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes floatUp {
-        0% { transform: translateY(0); opacity: 1; }
-        100% { transform: translateY(-50px); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
 
 // --- UI Updates ---
 function updateUI() {
@@ -1546,7 +1844,13 @@ function updateUI() {
 
     const shieldBadge = document.getElementById('shield-badge');
     if (shieldBadge) {
-        shieldBadge.style.display = GameState.powerups.shieldCharges > 0 ? 'flex' : 'none';
+        const p1Shield = GameState.powerups.shieldCharges > 0;
+        const p2Shield = GameState.multiplayer && GameState.powerups.shieldCharges2 > 0;
+        const holders = [];
+        if (p1Shield) holders.push('P1');
+        if (p2Shield) holders.push('P2');
+        shieldBadge.style.display = holders.length > 0 ? '' : 'none';
+        shieldBadge.textContent = holders.length > 0 ? `[Shield: ${holders.join('+')}]` : '';
     }
 
     updateComboBadge();
@@ -1557,7 +1861,7 @@ function updateComboBadge() {
     if (!badge) return;
     if (GameState.combo.count >= 2) {
         badge.style.display = '';
-        badge.textContent = `🔥 x${GameState.combo.count}`;
+        badge.textContent = `Combo x${GameState.combo.count}`;
     } else {
         badge.style.display = 'none';
     }
@@ -1584,10 +1888,16 @@ function updateQuote() {
 function pauseGame() {
     if (!GameState.isPlaying) return;
     GameState.isPaused = true;
+    GameState.pausedAt = performance.now();
     showScreen('pause-screen');
 }
 
 function resumeGame() {
+    // Shift scheduled cheese events by the paused duration so the warning/move
+    // countdown continues where it left off instead of firing while paused.
+    const pausedFor = performance.now() - GameState.pausedAt;
+    GameState.cheeseMoveAt += pausedFor;
+    GameState.cheeseWarnAt += pausedFor;
     GameState.isPaused = false;
     showScreen('game-screen');
 }
@@ -1615,9 +1925,16 @@ function endGame(reason = 'timeup') {
     stopGame();
     SoundEngine.play('game-over');
 
+    const cheeseImg = `<img src="${spriteDataURL('cheese', 'cheese', 8)}" alt="Cheese">`;
+
     if (GameState.multiplayer) {
         const p1 = GameState.score, p2 = GameState.score2;
-        document.getElementById('result-icon').textContent = p1 === p2 ? '🤝' : '🏆';
+        const tied = p1 === p2;
+        const winnerKey = p1 > p2 ? GameState.selectedCharacter : GameState.selectedCharacter2;
+        const winnerSprite = CHARACTER_SPRITES[winnerKey];
+        const winnerImg = `<img src="${spriteDataURL(winnerSprite.def, winnerSprite.palette, 8)}" alt="Winner">`;
+
+        document.getElementById('result-icon').innerHTML = tied ? cheeseImg + cheeseImg : winnerImg + cheeseImg;
         document.getElementById('result-title').textContent =
             p1 > p2 ? 'Player 1 Wins!' : p2 > p1 ? 'Player 2 Wins!' : "It's a Tie!";
         showResultQuote();
@@ -1638,7 +1955,8 @@ function endGame(reason = 'timeup') {
     const defeated = reason === 'defeated';
     const won = !defeated && GameState.score >= 50;
 
-    document.getElementById('result-icon').textContent = defeated ? '💀' : (won ? '🏆' : '🧀');
+    const wolfImg = `<img src="${spriteDataURL('wolf', 'guardian', 8)}" alt="Enemy">`;
+    document.getElementById('result-icon').innerHTML = defeated ? wolfImg : (won ? cheeseImg + cheeseImg : cheeseImg);
     document.getElementById('result-title').textContent = defeated ? 'The Cheese Got You!' : (won ? 'Cheese Master!' : 'Time\'s Up!');
     showResultQuote();
 
@@ -1658,9 +1976,11 @@ function endGame(reason = 'timeup') {
 function switchLeaderboardTab(difficulty) {
     GameState.difficulty = difficulty;
 
-    // Update tab styles
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    event.target.classList.add('active');
+    // Update tab styles (find the tab by its data attribute -- relying on a
+    // global `event` breaks when called programmatically and in Firefox)
+    document.querySelectorAll('.leaderboard-tabs .tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.difficulty === difficulty);
+    });
 
     const list = document.getElementById('leaderboard-list');
     list.innerHTML = '';
@@ -1668,16 +1988,15 @@ function switchLeaderboardTab(difficulty) {
     const entries = GameState.leaderboard[difficulty] || [];
 
     if (entries.length === 0) {
-        list.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No scores yet. Be the first!</p>';
+        list.innerHTML = '<p style="text-align: center; padding: 2rem;">No scores yet. Be the first!</p>';
         return;
     }
 
     entries.slice(0, 10).forEach((entry, index) => {
         const el = document.createElement('div');
         el.className = 'leaderboard-entry';
-        const medals = ['🥇', '🥈', '🥉'];
         el.innerHTML = `
-            <span class="entry-rank">${medals[index] || `#${index + 1}`}</span>
+            <span class="entry-rank">${index + 1}.</span>
             <span class="entry-name">${entry.name}</span>
             <span class="entry-score">${entry.score}</span>
         `;
@@ -1774,7 +2093,7 @@ function populateAchievementsGrid() {
         const card = document.createElement('div');
         card.className = 'achievement-card' + (unlocked ? ' unlocked' : ' locked');
         card.innerHTML = `
-            <div class="achievement-icon">${unlocked ? a.icon : '🔒'}</div>
+            <div class="achievement-icon">${unlocked ? a.icon : '░'}</div>
             <div class="achievement-name">${a.name}</div>
             <div class="achievement-desc">${a.description}</div>
         `;
@@ -1782,12 +2101,80 @@ function populateAchievementsGrid() {
     });
 }
 
-// --- Loading Screen ---
-window.addEventListener('load', () => {
-    setTimeout(() => {
+// --- Loading Screen: authentic C64 BASIC boot sequence ---
+const BOOT_LINES = [
+    '',
+    '    **** COMMODORE 64 BASIC V2 ****',
+    '',
+    ' 64K RAM SYSTEM  38911 BASIC BYTES FREE',
+    '',
+    'READY.',
+    'LOAD"CHEESE",8,1',
+    '',
+    'SEARCHING FOR CHEESE',
+    'LOADING',
+    '',
+    'READY.',
+    'RUN',
+    ''
+];
+
+function runBootSequence() {
+    const log = document.getElementById('boot-log');
+    if (!log) { showScreen('main-menu'); populateMenuCharacters(); return; }
+
+    const cursor = document.createElement('span');
+    cursor.className = 'boot-cursor';
+    cursor.textContent = '█';
+    log.appendChild(cursor);
+
+    let lineIndex = 0;
+    let finished = false;
+
+    const finish = () => {
+        if (finished) return;
+        finished = true;
+        document.removeEventListener('keydown', skip);
         showScreen('main-menu');
         populateMenuCharacters();
-    }, 2000);
+    };
+    const skip = () => finish();
+
+    // Click or any key jumps straight to the menu
+    document.getElementById('boot-panel').addEventListener('click', skip);
+    document.addEventListener('keydown', skip);
+
+    const typeNext = () => {
+        if (finished) return;
+        if (lineIndex >= BOOT_LINES.length) {
+            setTimeout(finish, 500);
+            return;
+        }
+        const line = BOOT_LINES[lineIndex];
+        log.insertBefore(document.createTextNode((lineIndex > 0 ? '\n' : '') + line), cursor);
+        lineIndex++;
+        // Disk-access lines linger a little, like a real 1541 drive would
+        const delay = (line === 'LOADING' || line.startsWith('SEARCHING')) ? 550 : 170;
+        setTimeout(typeNext, delay);
+    };
+    typeNext();
+}
+
+// Fill static sprite slots (logo, difficulty icons) once the DOM exists
+function populateStaticSprites() {
+    const logo = document.getElementById('logo-cheese');
+    if (logo) logo.src = spriteDataURL('cheese', 'cheese', 8);
+    const easy = document.getElementById('diff-icon-easy');
+    if (easy) easy.src = spriteDataURL('mouse', 'mouse-green');
+    const medium = document.getElementById('diff-icon-medium');
+    if (medium) medium.src = spriteDataURL('mouse', 'mouse-yellow');
+    const hard = document.getElementById('diff-icon-hard');
+    if (hard) hard.src = spriteDataURL('mouse', 'mouse-red');
+}
+
+window.addEventListener('load', () => {
+    populateStaticSprites();
+    setTimeout(runBootSequence, 250);
 });
 
 // --- Window Resize Handler ---

@@ -97,7 +97,7 @@ const SoundEngine = (() => {
 
     function updateMuteButtons() {
         document.querySelectorAll('.mute-btn').forEach(btn => {
-            btn.textContent = muted ? '🔇' : '🔊';
+            btn.textContent = muted ? 'Sound: Off' : 'Sound: On';
         });
     }
 
