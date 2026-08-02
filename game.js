@@ -1880,6 +1880,7 @@ function updateQuote() {
     if (quoteEl) {
         const quote = GameState.quotes[Math.floor(Math.random() * GameState.quotes.length)];
         quoteEl.textContent = `"${quote}"`;
+        quoteEl.title = quote; // full text on hover (panel is single-line + ellipsis)
         speakOnce(quote);
     }
 }

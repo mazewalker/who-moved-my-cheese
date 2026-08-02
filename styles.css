@@ -186,13 +186,18 @@ img, canvas {
 }
 
 .boot-log {
-    font-size: 1.25rem;
+    font-size: 1rem;
     line-height: 1.4;
     white-space: pre-wrap;
     word-break: break-all;
     color: var(--c64-blue);
     max-width: 640px;
     margin: 0 auto;
+}
+
+/* On big screens the boot screen gets the full 40-column treatment */
+@media (min-width: 1100px) {
+    .boot-log { font-size: 1.5rem; max-width: 960px; }
 }
 
 .boot-cursor {
@@ -320,7 +325,7 @@ img, canvas {
     top: -3px;
     left: -3px;
     padding: 0.2rem 0.45rem;
-    font-size: 0.85rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--c64-black);
     background: var(--p1-color);
@@ -351,13 +356,13 @@ img, canvas {
 }
 
 .char-desc {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--c64-light-blue);
     margin-top: 0.5rem;
 }
 
 .char-ability {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--c64-light-green);
     margin-top: 0.5rem;
 }
@@ -418,14 +423,14 @@ img, canvas {
 
 .btn-small {
     padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    font-size: 1rem;
     min-width: auto;
     border-width: 2px;
     box-shadow: 3px 3px 0 var(--c64-black);
 }
 
 .btn-icon {
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .mute-btn {
@@ -502,12 +507,12 @@ img, canvas {
 }
 
 .difficulty-grid h3 {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     margin-bottom: 0.5rem;
 }
 
 .difficulty-grid p {
-    font-size: 0.85rem;
+    font-size: 1rem;
     text-transform: none;
 }
 
@@ -550,11 +555,13 @@ img, canvas {
     top: 0.75rem;
     left: 0.75rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
     align-items: stretch;
     padding: 0.4rem 0.75rem;
-    max-width: calc(100vw - 2 * var(--bezel) - 1.5rem);
+    /* Reserve room on the right for the controls (Sound/Pause) so the
+       time/level/lives group wraps to a second row instead of overlapping. */
+    max-width: calc(100vw - 2 * var(--bezel) - 330px - 1.5rem);
 }
 
 /* One player's identity + score block. P1 = cyan, P2 = light red. */
@@ -588,12 +595,12 @@ img, canvas {
 }
 
 .hud-name {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--c64-light-grey);
 }
 
 .hud-score {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--c64-yellow);
     min-width: 3ch;
@@ -642,13 +649,23 @@ img, canvas {
     left: 50%;
     transform: translateX(-50%);
     width: calc(100% - 2 * var(--bezel) - 1.5rem);
-    max-width: 760px;
+    max-width: 620px;
     padding: 0.6rem 1rem;
+}
+
+/* On narrower windows the quote panel lifts above the footer/D-pad row,
+   and player names in the HUD give way to keep the stats panel compact */
+@media (max-width: 1100px) {
+    .hud-quote { bottom: 3.5rem; }
+    .hud-name { display: none; }
 }
 
 #maze-quote {
     color: var(--c64-white);
-    font-size: 0.9rem;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     animation: quoteFade 10s ease-in-out infinite;
 }
 
@@ -680,7 +697,7 @@ img, canvas {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--c64-cyan);
 }
 
@@ -726,7 +743,7 @@ img, canvas {
     border: 3px solid var(--c64-yellow);
     padding: 0.5rem 1rem;
     color: var(--c64-yellow);
-    font-size: 0.85rem;
+    font-size: 1rem;
     white-space: nowrap;
     animation: hintPulse 2s steps(2) infinite;
 }
@@ -740,7 +757,7 @@ img, canvas {
 .float-text {
     position: absolute;
     color: var(--c64-yellow);
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
     pointer-events: none;
     animation: floatUp 1s ease-out forwards;
@@ -909,7 +926,7 @@ img, canvas {
 }
 
 .final-label {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--c64-light-blue);
 }
 
@@ -1073,7 +1090,7 @@ img, canvas {
 }
 
 .entry-score {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--c64-yellow);
 }
@@ -1110,13 +1127,13 @@ img, canvas {
 
 .achievement-name {
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 1rem;
     margin-bottom: 0.35rem;
     color: var(--c64-white);
 }
 
 .achievement-desc {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--c64-light-blue);
 }
 
@@ -1146,11 +1163,11 @@ img, canvas {
 }
 
 .toast-icon {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
 }
 
 .toast-title {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--c64-purple);
 }
 
@@ -1167,6 +1184,13 @@ img, canvas {
 .name-entry p {
     margin-bottom: 1.5rem;
     color: var(--c64-purple);
+}
+
+.name-entry-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 #player-name {
@@ -1200,7 +1224,6 @@ img, canvas {
     .final-value { font-size: 1.5rem; }
     .char-grid { grid-template-columns: repeat(2, 1fr); }
     .hud-stats { gap: 0.5rem; padding: 0.3rem 0.5rem; }
-    .hud-name { display: none; }
 }
 
 /* On touch devices the D-pad, quote panel and menu/restart buttons would all
@@ -1222,13 +1245,13 @@ img, canvas {
 @media (max-width: 480px) {
     .hud-stats { gap: 0.5rem; padding: 0.3rem 0.5rem; }
     .hud-score { font-size: 1rem; }
-    .hud-group { font-size: 0.85rem; }
-    .hud-quote { font-size: 0.8rem; padding: 0.5rem 0.75rem; }
+    .hud-group { font-size: 0.75rem; }
+    .hud-quote { font-size: 0.75rem; padding: 0.5rem 0.75rem; }
     .hud-quote-meta { flex-direction: column; align-items: flex-start; gap: 0.35rem; }
-    .hud-footer .btn, .hud-controls .btn { padding: 0.3rem 0.5rem; font-size: 0.7rem; min-width: auto; }
+    .hud-footer .btn, .hud-controls .btn { padding: 0.3rem 0.5rem; font-size: 0.75rem; min-width: auto; }
     .hud-footer { gap: 0.25rem; }
     .touch-dpad { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); }
-    .player-hint { font-size: 0.7rem; white-space: normal; text-align: center; max-width: 70vw; }
+    .player-hint { font-size: 0.75rem; white-space: normal; text-align: center; max-width: 70vw; }
 }
 
 /* --- Scrollbar Styling --- */
